@@ -328,12 +328,12 @@ class Adaptive_Spatial_Attention(nn.Module):
         self.patches_resolution = reso
         self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
 
-        assert (
-            0 <= self.shift_size[0] < self.split_size[0]
-        ), "shift_size must in 0-split_size0"
-        assert (
-            0 <= self.shift_size[1] < self.split_size[1]
-        ), "shift_size must in 0-split_size1"
+        assert 0 <= self.shift_size[0] < self.split_size[0], (
+            "shift_size must in 0-split_size0"
+        )
+        assert 0 <= self.shift_size[1] < self.split_size[1], (
+            "shift_size must in 0-split_size1"
+        )
 
         self.branch_num = 2
 
@@ -516,9 +516,11 @@ class Adaptive_Spatial_Attention(nn.Module):
             qkv_1 = qkv_1.view(3, B, _L, C // 2)
 
             if self.patches_resolution != _H or self.patches_resolution != _W:
-                mask_tmp = self.calculate_mask(_H, _W)
-                x1_shift = self.attns[0](qkv_0, _H, _W, mask=mask_tmp[0].to(x.device))
-                x2_shift = self.attns[1](qkv_1, _H, _W, mask=mask_tmp[1].to(x.device))
+                mask_tmp0, mask_tmp1 = self.calculate_mask(_H, _W)
+                mask_tmp0 = mask_tmp0.to(x.device, dtype=qkv_0.dtype)
+                mask_tmp1 = mask_tmp1.to(x.device, dtype=qkv_0.dtype)
+                x1_shift = self.attns[0](qkv_0, _H, _W, mask=mask_tmp0)
+                x2_shift = self.attns[1](qkv_1, _H, _W, mask=mask_tmp1)
             else:
                 x1_shift = self.attns[0](qkv_0, _H, _W, mask=self.attn_mask_0)
                 x2_shift = self.attns[1](qkv_1, _H, _W, mask=self.attn_mask_1)
@@ -863,7 +865,7 @@ class Upsample(nn.Sequential):
             m.append(nn.PixelShuffle(3))
         else:
             raise ValueError(
-                f"scale {scale} is not supported. " "Supported scales: 2^n and 3."
+                f"scale {scale} is not supported. Supported scales: 2^n and 3."
             )
         super().__init__(*m)
 
